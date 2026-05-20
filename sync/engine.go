@@ -481,6 +481,19 @@ func (e *SyncEngine) Run(ctx context.Context) (*SyncResult, error) {
 	defer tx.Rollback()
 
 	for _, diff := range diffs {
+		// Filter by sync direction
+		dir := e.cfg.Sync.Direction
+		switch diff.Action {
+		case ActionPush, ActionDeleteRemote:
+			if dir == "pull" {
+				continue
+			}
+		case ActionPull, ActionDeleteLocal:
+			if dir == "push" {
+				continue
+			}
+		}
+
 		switch diff.Action {
 		case ActionPush:
 			if err := e.execPush(ctx, diff.Path, local[diff.Path], diff.RemoteHash); err != nil {
