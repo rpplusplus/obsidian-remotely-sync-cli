@@ -58,3 +58,25 @@ There is no separate metadata or index file for the mapping. The encrypted filen
 ## S3 Compatibility
 
 remotely-save uses S3 API directly (not CDN). S3 is strongly consistent — after a PUT, subsequent GETs and LISTs return the latest version. CDN caching is not a factor for sync operations.
+
+## Deletion Handling
+
+Both remotely-save and this CLI use three-way merge to detect deletions:
+
+```
+State DB (prevSync) + Local filesystem + Remote S3
+```
+
+| prevSync | Local | Remote | Meaning | Action |
+|----------|-------|--------|---------|--------|
+| ✅ | ❌ | ✅ | Deleted locally | Delete remote |
+| ✅ | ✅ | ❌ | Deleted remotely | Delete local |
+| ❌ | ✅ | ❌ | New local file | Push |
+| ❌ | ❌ | ✅ | New remote file | Pull |
+| ✅ | ❌ | ❌ | Already deleted | Skip |
+
+Without the `prevSync` state, we cannot distinguish "deleted locally" from "new file not yet synced". This is why the state DB is essential.
+
+### Direction filtering
+
+When running with `--direction push`, only `ActionPush` and `ActionDeleteRemote` are executed. When running with `--direction pull`, only `ActionPull` and `ActionDeleteLocal` are executed. This prevents accidental data loss from wrong-direction operations.
