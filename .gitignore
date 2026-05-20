@@ -1,0 +1,42 @@
+# Binaries
+obsidian-sync
+*.exe
+*.dylib
+*.so
+*.out
+
+# Config (contains secrets — never commit)
+config.yaml
+.obsidian-sync/
+
+# State database
+*.db
+*.db-wal
+*.db-shm
+
+# Go
+vendor/
+go.work
+go.work.sum
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Test artifacts
+coverage.out
+coverage.html
+*.test
+
+# Release
+dist/

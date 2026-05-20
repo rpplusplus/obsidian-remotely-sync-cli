@@ -1,0 +1,35 @@
+# obsidian-remotely-sync-cli configuration
+# Copy this to ~/.obsidian-remotely-sync-cli/config.yaml and fill in your values.
+# See README.md for detailed explanation of each field.
+
+vault_path: /path/to/your/obsidian/vault
+
+s3:
+  # Tencent Cloud COS example:
+  endpoint: https://cos.ap-nanjing.myqcloud.com
+  region: ap-nanjing
+
+  # AWS S3 example:
+  # endpoint: https://s3.amazonaws.com
+  # region: us-east-1
+
+  access_key: YOUR_ACCESS_KEY
+  secret_key: YOUR_SECRET_KEY
+  bucket: your-bucket-name
+  prefix: ""  # optional: sync into a subfolder in the bucket
+
+encryption:
+  # Must match remotely-save's encryption method if you're syncing
+  # with an existing remotely-save vault.
+  method: openssl-base64  # openssl-base64 is the only supported method
+  password: YOUR_ENCRYPTION_PASSWORD
+
+sync:
+  # Direction: pull (remote→local), push (local→remote), bidirectional
+  direction: bidirectional
+
+  # Conflict resolution when both sides changed:
+  #   keep_local   — local version wins
+  #   keep_remote  — remote version wins
+  #   keep_newer   — more recently modified wins
+  conflict: keep_newer
