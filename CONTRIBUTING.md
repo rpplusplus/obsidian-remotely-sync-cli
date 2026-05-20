@@ -6,7 +6,7 @@ Thanks for your interest in contributing to obsidian-remotely-sync-cli!
 
 ```bash
 # Clone
-git clone https://github.com/<your-username>/obsidian-remotely-sync-cli.git
+git clone https://github.com/rpplusplus/obsidian-remotely-sync-cli.git
 cd obsidian-remotely-sync-cli
 
 # Build
