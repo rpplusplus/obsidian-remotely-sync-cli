@@ -418,7 +418,7 @@ func (e *SyncEngine) classifyFile(
 		case !localChanged && !remoteChanged:
 			return FileDiff{Path: path, Action: ActionNone}
 		case localChanged && !remoteChanged:
-			return FileDiff{Path: path, Action: ActionPush, LocalHash: localHash}
+			return FileDiff{Path: path, Action: ActionPush, LocalHash: localHash, RemoteHash: prev.RemoteHash}
 		case !localChanged && remoteChanged:
 			return FileDiff{Path: path, Action: ActionPull, RemoteHash: prev.RemoteHash}
 		default:
@@ -483,7 +483,7 @@ func (e *SyncEngine) Run(ctx context.Context) (*SyncResult, error) {
 	for _, diff := range diffs {
 		switch diff.Action {
 		case ActionPush:
-			if err := e.execPush(ctx, diff.Path, local[diff.Path]); err != nil {
+			if err := e.execPush(ctx, diff.Path, local[diff.Path], diff.RemoteHash); err != nil {
 				result.Errors = append(result.Errors, fmt.Errorf("push %s: %w", diff.Path, err))
 				continue
 			}
@@ -520,7 +520,7 @@ func (e *SyncEngine) Run(ctx context.Context) (*SyncResult, error) {
 			resolved := e.resolveConflict(diff, local[diff.Path], remote[diff.Path])
 			switch resolved {
 			case ActionPush:
-				if err := e.execPush(ctx, diff.Path, local[diff.Path]); err != nil {
+				if err := e.execPush(ctx, diff.Path, local[diff.Path], diff.RemoteHash); err != nil {
 					result.Errors = append(result.Errors, fmt.Errorf("conflict push %s: %w", diff.Path, err))
 					continue
 				}
@@ -545,7 +545,7 @@ func (e *SyncEngine) Run(ctx context.Context) (*SyncResult, error) {
 }
 
 // execPush encrypts and uploads a local file, then updates state.
-func (e *SyncEngine) execPush(ctx context.Context, relPath string, lf LocalFile) error {
+func (e *SyncEngine) execPush(ctx context.Context, relPath string, lf LocalFile, cachedEncName string) error {
 	// Read local file
 	data, err := os.ReadFile(filepath.Join(e.vault, relPath))
 	if err != nil {
@@ -558,13 +558,18 @@ func (e *SyncEngine) execPush(ctx context.Context, relPath string, lf LocalFile)
 		return fmt.Errorf("encrypting: %w", err)
 	}
 
-	// Encrypt filename
-	encName, err := crypto.EncryptName(relPath, e.password)
-	if err != nil {
-		return fmt.Errorf("encrypting name: %w", err)
+	// Reuse cached encrypted filename if available (like remotely-save does),
+	// otherwise encrypt a new one. This avoids creating duplicate keys in S3
+	// when updating the same file.
+	encName := cachedEncName
+	if encName == "" {
+		encName, err = crypto.EncryptName(relPath, e.password)
+		if err != nil {
+			return fmt.Errorf("encrypting name: %w", err)
+		}
 	}
 
-	// Upload
+	// Upload (overwrites if same key)
 	if err := e.s3c.PutObject(ctx, encName, encrypted); err != nil {
 		return fmt.Errorf("uploading: %w", err)
 	}
