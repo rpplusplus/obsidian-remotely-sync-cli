@@ -1,7 +1,7 @@
 # obsidian-remotely-sync-cli
 
-[![CI](https://github.com/<user>/obsidian-remotely-sync-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/<user>/obsidian-remotely-sync-cli/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/<user>/obsidian-remotely-sync-cli)](https://goreportcard.com/report/github.com/<user>/obsidian-remotely-sync-cli)
+[![CI](https://github.com/rpplusplus/obsidian-remotely-sync-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/rpplusplus/obsidian-remotely-sync-cli/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rpplusplus/obsidian-remotely-sync-cli)](https://goreportcard.com/report/github.com/rpplusplus/obsidian-remotely-sync-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A command-line tool for syncing Obsidian vaults via S3-compatible object storage, with client-side encryption compatible with [remotely-save](https://github.com/remotely-save/remotely-save) (legacy OpenSSL format).
@@ -35,7 +35,7 @@ This tool supports the **legacy OpenSSL-base64** encryption format used by remot
 
 ### Binary release (recommended)
 
-Download from [Releases](https://github.com/<user>/obsidian-remotely-sync-cli/releases/latest) page. Available for:
+Download from [Releases](https://github.com/rpplusplus/obsidian-remotely-sync-cli/releases/latest) page. Available for:
 
 - Linux (amd64, arm64)
 - macOS (amd64, arm64)
@@ -43,7 +43,7 @@ Download from [Releases](https://github.com/<user>/obsidian-remotely-sync-cli/re
 
 ```bash
 # Linux amd64
-curl -LO https://github.com/<user>/obsidian-remotely-sync-cli/releases/latest/download/obsidian-remotely-sync-cli-linux-amd64.tar.gz
+curl -LO https://github.com/rpplusplus/obsidian-remotely-sync-cli/releases/latest/download/obsidian-remotely-sync-cli-linux-amd64.tar.gz
 tar xzf obsidian-remotely-sync-cli-linux-amd64.tar.gz
 sudo mv obsidian-remotely-sync-cli /usr/local/bin/
 ```
@@ -51,7 +51,7 @@ sudo mv obsidian-remotely-sync-cli /usr/local/bin/
 ### Build from source
 
 ```bash
-git clone https://github.com/<user>/obsidian-remotely-sync-cli.git
+git clone https://github.com/rpplusplus/obsidian-remotely-sync-cli.git
 cd obsidian-remotely-sync-cli
 make build
 ```
@@ -59,7 +59,7 @@ make build
 ### go install
 
 ```bash
-go install github.com/<user>/obsidian-remotely-sync-cli@latest
+go install github.com/rpplusplus/obsidian-remotely-sync-cli@latest
 ```
 
 ## Quick Start
