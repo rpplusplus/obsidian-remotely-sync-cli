@@ -58,6 +58,7 @@ type LocalFile struct {
 	Size    int64
 	ModTime time.Time
 	Hash    string // SHA-256 hex
+	IsDir   bool   // true for directories
 }
 
 // FileDiff describes the sync action needed for a single file.
@@ -153,15 +154,26 @@ func (e *SyncEngine) scanLocal() (map[string]LocalFile, error) {
 			return err
 		}
 
-		// Skip directories and hidden files/folders
+		// Skip hidden files/folders
 		name := d.Name()
-		if d.IsDir() {
-			if name == ".obsidian" || name == ".trash" || strings.HasPrefix(name, ".") {
+		if strings.HasPrefix(name, ".") {
+			if d.IsDir() {
 				return filepath.SkipDir
 			}
 			return nil
 		}
-		if strings.HasPrefix(name, ".") {
+
+		// Collect directories (for creating S3 folder markers)
+		if d.IsDir() {
+			rel, err := filepath.Rel(e.vault, p)
+			if err != nil {
+				return fmt.Errorf("computing relative path: %w", err)
+			}
+			rel = filepath.ToSlash(rel)
+			files[rel] = LocalFile{
+				Path:  rel,
+				IsDir: true,
+			}
 			return nil
 		}
 
@@ -558,7 +570,13 @@ func (e *SyncEngine) Run(ctx context.Context) (*SyncResult, error) {
 }
 
 // execPush encrypts and uploads a local file, then updates state.
+// For directories, creates a folder marker in S3.
 func (e *SyncEngine) execPush(ctx context.Context, relPath string, lf LocalFile, cachedEncName string) error {
+	// Handle directories - create folder marker
+	if lf.IsDir {
+		return e.execPushFolder(ctx, relPath, cachedEncName)
+	}
+
 	// Read local file
 	data, err := os.ReadFile(filepath.Join(e.vault, relPath))
 	if err != nil {
@@ -596,6 +614,46 @@ func (e *SyncEngine) execPush(ctx context.Context, relPath string, lf LocalFile,
 
 	if err := e.upsertState(tx, relPath, lf.Hash, encName, lf.Size, int64(len(encrypted)), lf.ModTime, time.Now().UTC()); err != nil {
 		return fmt.Errorf("updating state: %w", err)
+	}
+
+	return tx.Commit()
+}
+
+// execPushFolder creates a folder marker in S3 (encrypted empty file with "/" suffix).
+func (e *SyncEngine) execPushFolder(ctx context.Context, relPath string, cachedEncName string) error {
+	// Folder markers are empty files with "/" suffix
+	folderPath := relPath + "/"
+
+	// Reuse cached encrypted filename if available
+	encName := cachedEncName
+	if encName == "" {
+		var err error
+		encName, err = crypto.EncryptName(folderPath, e.password)
+		if err != nil {
+			return fmt.Errorf("encrypting folder name: %w", err)
+		}
+	}
+
+	// Encrypt empty content for folder marker
+	encrypted, err := crypto.Encrypt([]byte{}, e.password)
+	if err != nil {
+		return fmt.Errorf("encrypting folder marker: %w", err)
+	}
+
+	// Upload folder marker
+	if err := e.s3c.PutObject(ctx, encName, encrypted); err != nil {
+		return fmt.Errorf("uploading folder marker: %w", err)
+	}
+
+	// Update state
+	tx, err := e.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if err := e.upsertState(tx, relPath, "", encName, 0, int64(len(encrypted)), time.Time{}, time.Now().UTC()); err != nil {
+		return fmt.Errorf("updating state for folder: %w", err)
 	}
 
 	return tx.Commit()
