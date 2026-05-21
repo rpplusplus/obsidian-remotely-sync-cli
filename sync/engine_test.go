@@ -93,8 +93,10 @@ func TestScanLocal(t *testing.T) {
 		t.Fatalf("scanLocal: %v", err)
 	}
 
-	if len(files) != 2 {
-		t.Fatalf("expected 2 files, got %d", len(files))
+	// scanLocal now also collects directories (for S3 folder markers).
+	// Expected: "." (root), "folder" (dir), "note1.md", "folder/note2.md"
+	if len(files) != 4 {
+		t.Fatalf("expected 4 entries (2 files + 2 dirs), got %d", len(files))
 	}
 
 	if _, ok := files["note1.md"]; !ok {
@@ -102,6 +104,12 @@ func TestScanLocal(t *testing.T) {
 	}
 	if _, ok := files["folder/note2.md"]; !ok {
 		t.Error("folder/note2.md not found")
+	}
+	if f, ok := files["."]; !ok || !f.IsDir {
+		t.Error("root dir '.' not found or not marked as dir")
+	}
+	if f, ok := files["folder"]; !ok || !f.IsDir {
+		t.Error("'folder' dir not found or not marked as dir")
 	}
 }
 
